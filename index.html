@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>モータースポーツ&プレミアリーグ カレンダー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fefdf8;
+    --panel:#ffffff;
+    --panel2:#f8f3e8;
+    --line:#e0d8cc;
+    --text:#1a1a1a;
+    --sub:#7a7a7a;
+    --mid:#4a4a4a;
+    --f1:#9c3b2e;
+    --f1bg:#f7e3de;
+    --motogp:#c45000;
+    --motogpbg:#fff3e0;
+    --indycar:#2563a0;
+    --indycarbg:#dbeafe;
+    --placcent:#7c3aed;
+    --plbg:#ece2fb;
+    --accent:#2d6a4f;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Noto Sans JP',"Hiragino Kaku Gothic ProN","Yu Gothic",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.6;
+  }
+  header{
+    padding:18px 16px 8px;
+    border-bottom:1px solid var(--line);
+    position:sticky; top:0; background:var(--bg); z-index:10;
+  }
+  h1{
+    margin:0 0 2px;
+    font-family:'Lora',serif;
+    font-size:19px;
+    font-weight:600;
+    letter-spacing:.01em;
+    color:var(--text);
+  }
+  .sub{color:var(--sub); font-size:12px; margin-bottom:12px; font-style:italic;}
+
+  .tabs{display:flex; gap:6px; overflow-x:auto; padding-bottom:10px;}
+  .tab{
+    flex:0 0 auto;
+    padding:7px 14px;
+    border-radius:999px;
+    background:var(--panel2);
+    border:1px solid transparent;
+    color:var(--sub);
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:.15s;
+  }
+  .tab{border:1.5px solid var(--line);}
+  .tab.active{color:#fff; border-color:transparent;}
+  .tab[data-sport="all"].active{background:var(--accent);}
+  .tab[data-sport="f1"].active{background:var(--f1);}
+  .tab[data-sport="motogp"].active{background:var(--motogp);}
+  .tab[data-sport="indycar"].active{background:var(--indycar);}
+  .tab[data-sport="pl"].active{background:var(--placcent);}
+
+  .viewbar{display:flex; align-items:center; justify-content:space-between; padding:6px 16px 12px; gap:10px; flex-wrap:wrap;}
+  .viewswitch{display:flex; gap:4px; background:var(--panel2); border-radius:8px; padding:3px;}
+  .viewswitch button{
+    border:none; background:transparent; color:var(--sub); padding:6px 12px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer;
+  }
+  .viewswitch button.active{background:#fff; color:var(--text); box-shadow:0 1px 2px rgba(60,64,67,.3);}
+  .nav{display:flex; align-items:center; gap:10px;}
+  .nav button{
+    background:#fff; border:1px solid var(--line); color:var(--text); width:30px; height:30px; border-radius:7px; cursor:pointer; font-size:14px;
+  }
+  .nav button:hover{background:var(--panel2);}
+  .nav .label{font-size:14px; font-weight:600; min-width:150px; text-align:center;}
+  .today-btn{background:#fff; border:1px solid var(--line); color:var(--sub); border-radius:7px; padding:6px 10px; font-size:12px; cursor:pointer;}
+  .today-btn:hover{background:var(--panel2);}
+
+  main{padding:0 16px 40px;}
+
+  /* Month view */
+  .month-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,.05);}
+  .dow{background:#fff; color:var(--sub); text-align:center; font-size:12.5px; padding:7px 0; font-weight:700;}
+  .dow.sat{background:var(--indycarbg); color:var(--indycar);}
+  .dow.sun{background:var(--f1bg); color:var(--f1);}
+  .cell{background:#fff; min-height:92px; padding:5px 5px; position:relative;}
+  .cell.out{background:#fafaf7; color:#c9c2b3;}
+  .cell.out .num{color:#c9c2b3;}
+  .cell:hover{background:var(--panel2); transition:background .12s;}
+  .cell.out:hover{background:#f3f0e8;}
+  .sport-icon{width:16px; height:10px; object-fit:contain; vertical-align:middle; display:inline-block;}
+  .sport-emoji{font-size:10px; vertical-align:middle;}
+  .day-icon{width:34px; height:22px; object-fit:contain; align-self:center;}
+  .cell.today .num{
+    background:var(--accent); color:#fff; border-radius:50%; width:23px; height:23px;
+    display:inline-flex; align-items:center; justify-content:center; font-size:12.5px;
+  }
+  .cell .num{font-size:12.5px; color:var(--sub); font-weight:700;}
+  .cell .num.sat{color:var(--indycar);}
+  .cell .num.sun{color:var(--f1);}
+  .dot-row{display:flex; flex-wrap:wrap; gap:2px; margin-top:3px;}
+  .ev{
+    font-size:11.5px; line-height:1.3; padding:2px 5px; border-radius:5px; margin-top:2px;
+    display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    cursor:default; font-weight:700;
+  }
+  .ev.f1{background:var(--f1bg); color:var(--f1);}
+  .ev.motogp{background:var(--motogpbg); color:var(--motogp);}
+  .ev.indycar{background:var(--indycarbg); color:var(--indycar);}
+  .ev.pl{background:var(--plbg); color:var(--placcent);}
+  .more{font-size:11px; color:var(--sub); margin-top:2px;}
+
+  /* Week view */
+  .week-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:8px;}
+  .week-day{background:#fff; border:1px solid var(--line); border-radius:14px; padding:8px; min-height:130px; box-shadow:0 2px 10px rgba(0,0,0,.04); transition:background .12s;}
+  .week-day:hover{background:var(--panel2);}
+  .week-day.today{border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent);}
+  .week-day.sat{background:var(--indycarbg);}
+  .week-day.sun{background:var(--f1bg);}
+  .week-day .dhead{font-size:12.5px; color:var(--sub); font-weight:700; margin-bottom:6px;}
+  .week-day.sat .dhead{color:var(--indycar);}
+  .week-day.sun .dhead{color:var(--f1);}
+
+  /* Day view */
+  .day-list{display:flex; flex-direction:column; max-width:620px;}
+  .itinerary{border-left:2px solid var(--line); margin-left:52px;}
+  .itin-row{position:relative; display:flex; align-items:flex-start; padding:10px 0 10px 16px; border-bottom:1px solid var(--line);}
+  .itin-row:last-child{border-bottom:none;}
+  .itin-time{position:absolute; left:-68px; top:11px; width:56px; text-align:right; font-size:13px; font-weight:700; color:var(--mid); font-variant-numeric:tabular-nums;}
+  .itin-dot{position:absolute; left:-6px; top:14px; width:9px; height:9px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px var(--line);}
+  .itin-dot.f1{background:var(--f1);} .itin-dot.motogp{background:var(--motogp);} .itin-dot.indycar{background:var(--indycar);} .itin-dot.pl{background:var(--placcent);}
+  .itin-body{display:flex; align-items:center; gap:10px;}
+  .itin-icon{width:38px; height:24px; object-fit:contain; flex-shrink:0;}
+  .itin-ttl{font-size:15px; font-weight:700; color:var(--text);}
+  .itin-meta{font-size:12.5px; color:var(--sub); margin-top:2px;}
+  .empty{color:var(--sub); font-size:14px; padding:30px 0; text-align:center;}
+
+  /* ---------- Mobile responsiveness ---------- */
+  @media (max-width: 680px){
+    header{padding:14px 12px 6px;}
+    h1{font-size:16px;}
+    main{padding:0 12px 32px;}
+    .viewbar{padding:6px 12px 10px;}
+    .nav .label{min-width:118px; font-size:13px;}
+
+    /* Month view: tighten a bit for small screens */
+    .cell{min-height:74px; padding:4px 3px;}
+    .ev{font-size:10.5px; padding:1px 4px;}
+    .sport-icon{width:13px; height:8px;}
+    .dow{font-size:11px; padding:5px 0;}
+
+    /* Week view: 7 cramped columns -> stacked full-width list */
+    .week-grid{display:flex; flex-direction:column; gap:8px;}
+    .week-day{min-height:0; padding:10px 12px;}
+    .week-day .dhead{font-size:13px; margin-bottom:8px;}
+    .week-day .ev{
+      font-size:13px; white-space:normal; padding:6px 8px; margin-bottom:5px;
+    }
+    .week-day .sport-icon{width:16px; height:10px;}
+
+    /* Day (itinerary) view: pull the timeline in so it fits narrow screens */
+    .itinerary{margin-left:40px;}
+    .itin-row{padding:9px 0 9px 14px;}
+    .itin-time{left:-52px; width:40px; font-size:12px;}
+    .itin-dot{left:-5px;}
+    .itin-icon{width:30px; height:20px;}
+    .itin-ttl{font-size:14px;}
+    .itin-meta{font-size:11.5px;}
+  }
+
+  /* PL list view (full fixture list) */
+  .pl-toolbar{display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;}
+  .pl-toolbar select, .pl-toolbar input{
+    background:#fff; border:1px solid var(--line); color:var(--text); padding:7px 10px; border-radius:8px; font-size:14px;
+  }
+  .mw-block{margin-bottom:16px;}
+  .mw-title{font-size:13.5px; color:var(--placcent); font-weight:700; margin:14px 0 6px; letter-spacing:.03em;}
+  .fixture{
+    display:flex; justify-content:space-between; padding:8px 11px; background:#fff; border:1px solid var(--line); border-radius:9px; margin-bottom:4px; font-size:14.5px;
+  }
+  .fixture .date{color:var(--sub); font-size:12.5px;}
+  .fixture.mancity{border-color:var(--indycar); background:var(--indycarbg);}
+
+  footer{padding:18px 16px 40px; color:var(--sub); font-size:11px; border-top:1px solid var(--line); margin-top:10px;}
+  a{color:var(--indycar);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏁 Hiroko's Sports Calendar <span style="color:var(--sub); font-weight:400;">— Dallas time</span></h1>
+  <div class="sub">MotoGP・F1・IndyCar・Premier League（全て米国中部時間 / Dallasで表示）</div>
+  <div class="tabs" id="tabs">
+    <div class="tab active" data-sport="all">全て（Man City）</div>
+    <div class="tab" data-sport="f1">F1</div>
+    <div class="tab" data-sport="motogp">MotoGP</div>
+    <div class="tab" data-sport="indycar">IndyCar</div>
+    <div class="tab" data-sport="pl">プレミアリーグ（全チーム）</div>
+  </div>
+</header>
+
+<div class="viewbar" id="viewbar">
+  <div class="nav">
+    <button id="prevBtn">‹</button>
+    <div class="label" id="periodLabel"></div>
+    <button id="nextBtn">›</button>
+    <button class="today-btn" id="todayBtn">今日</button>
+  </div>
+  <div class="viewswitch" id="viewswitch">
+    <button data-view="month" class="active">月</button>
+    <button data-view="week">週</button>
+    <button data-view="day">日</button>
+  </div>
+</div>
+
+<main id="main"></main>
+
+<footer>
+  今週・今日パッと確認用。時刻はダラス（米国中部時間）表示。プレミアリーグは日程確定後もTV放送の都合で変更されることがあります（特に9月以降の未確定分）。F1・MotoGPは開催週末（金〜日）を表示、正式なセッション時刻はレース直前に確定するため今後アップデート予定。<br>
+  拡張メモ: ダラスFC（MLS）・マーベリックス（NBA）は後で追加できるよう sportData に配列を足すだけの構成にしてあります。
+</footer>
+
+<script>
+/* ============================================================
+   DATA
+   ============================================================ */
+
+const LOGOS = {
+  f1: "data:image/png;base64,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",
+  indycar: "data:image/png;base64,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Q0pTRlIbJothCoF2xw19jWlPacs9aSHInrdYtmzV6iFjMzps0NZwl0jFtUZLIpkonvUsvJULz0AwMwMEekjeEbJqxaLvadvy0sdKSV3XWvOx0wkbfpxdXbZokxhS4lISxSmkvJh7WlJM53iQfr8CWbGesYhpK14ek4U0BRHxct8lj3EKZ5Mt1ITij6wGRkXtbxhGpi01caxTiNWdICursS0bTxebrM0UBIrYiBICSjJCrJ8b55t6IkoTLtYLLYgsJAm3GkliIVaSmm+u1jjRAz2XCsaLRNpiX1yXITXjM8lTHc4C0mIO0jUkiYFkK8kFY9eTFHFY9z3oc0DQfoS4GxDKF5YFRYqap50H9K6PBmpFCwH/NkNCYa1y4lbccx2vcQqBG5CFehwHMvYijaB1O0XcwMOHINhB+8ali6ni6XCa83as3NFdncZc6XAzVQ52QA6t+B4oswypP+vsqL+luwUZP4dIbkryVwOrCdyV5A3I0Iru51De868Qf+D3gJ+BBsigCZSvGPeLDoZm5Be7xgug9zxguxvPCEHKQd+U1HN/HHxIqA9CFv9E06398XzKIR3fy5i8Yc0gsvWzt3st5GbPE7v1affGmpSSmcLP10Y5e1uadyFVraGgqTJeSOYnEP+8YMdxFiBZpq9NnuvcBqrtbZ4nVyA1eUIC+uD0FwI7l+TZ0TfjcRlSk0eFLrG5sWd1hPRj5T3IRK7lAuQ+Q8w8WcvjvINcl+RVOH0obgJxP4aYuVCmegf5gSQlFN/2zD+CPGupcXG7fwXRiOi3tZK8zwrfUNonXd+McHzGpPXnEHo/+Yz1PdlAZCzwM32RI/wyXMyV63Iulx9C1Vu5cdF19rWggXjKJPcK9ZSn59Q5Zw45wJaGeqDJrwOJljUz9uzME0KXDycV5rnSfAYuyYPPAZ06BMX/x8yXrbUuQT+VFSOE98igTtARaHDiNrAXvDtfxQscAIbCV2RXWu/LihHCl8uM9MDbHhq05yW8Je8q9y5FJ47u4FN8BU8e7VtBDxFv6W912GsD4daSFPW8GVN8m+Nsl3eqTpIGUiXxmmHMvDoMGhGHido7r4ID15dn73l9biSZQNxxSiE5E901dnZcEq4lVDPfPOpAxeol6SGybckLtI98aeGyFGpSJE+lBL3GXsU0EJoorC3nhRZhHnClxC+dJffwk6e8wgKPIk8v5vSv3kEr/SxdPA2c/jwoo8GOifNTeQ3Sm3I7knJ3Zwf5tf/K/gCfFoBEXEP7tAAAACh0RVh0aWNjOmNvcHlyaWdodABDb3B5cmlnaHQgQXBwbGUgSW5jLiwgMjAyNuPZe4UAAAAXdEVYdGljYzpkZXNjcmlwdGlvbgBEaXNwbGF5FxuVuAAAABd0RVh0eG1wOlBpeGVsWERpbWVuc2lvbgAzNjLn7R8kAAAAF3RFWHR4bXA6UGl4ZWxZRGltZW5zaW9uADI1NLluYpMAAAAadEVYdHhtcDpVc2VyQ29tbWVudABTY3JlZW5zaG900+CyfAAAAABJRU5ErkJggg==",
+  motogp: "data:image/png;base64,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",
+  motogp_m: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACsAAAAaCAMAAAAZpVX6AAAAIGNIUk0AAHomAACAhAAA+gAAAIDoAAB1MAAA6mAAADqYAAAXcJy6UTwAAAAMUExURQAAAGhoaAICAr29vd055cEAAAABdFJOUwBA5thmAAAACXBIWXMAAAFZAAABWQENKMgFAAAAB3RJTUUH6gcNFR0eJM+mbQAAAbh6VFh0UmF3IHByb2ZpbGUgdHlwZSB4bXAAADiNhVRBcsMgDLzrFX0ClkDCz3FtuHWmxz6/K9wE4tDEjBMbtLvSgkU/X9/04ZcFI9kty2ZZDwt6aLKoCwd/112Lia/JwayLRq3KmmQ75+/RlZkDdRpMfjok5XikwCGKVgOQgygXCe1mKWHj4AMpMMhVtsQxUtSL/rnoOWSLGEE2aFZrFxdDEJcmYVxlkdUHV5IgjAnG73GS4F9sBS3StsyHC/hyz+WaUYyayEQFE2srbYULBRn+BcAXhjac8AxhxAPROCxTLwrWZVBNymo5lW43nuGfHlj5w3hpSzOxvtYbPPS89VmOXundQG7qTe7q1M0vuhe0pQS/knFsNH5K3HAp6XQxtXfRDNei7L2sE0kz6FxzAAZsTkb0jjPnWQNJTaXtlhRx8UetCWREdEl6q7nOCCAYHiXpHWRe5n3v8Hmoe1tJdz9wJyyBArRwCUd577vWw+fRLkYv1fKMADKLRIntS7vL0SvA27LWjqN3SlfAf0I0U4reJNbzVKEDjEIPAmMcjYHXNsF1bBTPfWJsctSDvc9F9cVG8dSAfYV+AQsVUA98y2aQAAAAa0lEQVQ4y+2RUQ6AMAhDC9z/zrqpjC7FAxj799KXEAD408TcPRoS6qqZpOpOZK+qC9oSXlsmqcbdMmkVV8sk1XOP2TJ1KnJ00u6u6+RKSepahuouUodFdQ3arerzAmh3e/tAi8aNEWbq8PUcfloCIvnkjkgAAAAodEVYdGljYzpjb3B5cmlnaHQAQ29weXJpZ2h0IEFwcGxlIEluYy4sIDIwMjbj2XuFAAAAF3RFWHRpY2M6ZGVzY3JpcHRpb24ARGlzcGxheRcblbgAAAAWdEVYdHhtcDpQaXhlbFhEaW1lbnNpb24ANTYMAvScAAAAFnRFWHR4bXA6UGl4ZWxZRGltZW5zaW9uADYwE9rb7wAAABp0RVh0eG1wOlVzZXJDb21tZW50AFNjcmVlbnNob3TT4LJ8AAAAAElFTkSuQmCC"
+};
+
+// ---- F1 2026: precise session times, converted to Dallas Central Time (ET-1h) ----
+const f1Races = [
+  {name:"Australian GP", sessions:[
+    ["Practice 1","2026-03-05","19:30"],["Practice 2","2026-03-05","23:00"],["Practice 3","2026-03-06","19:30"],
+    ["Qualifying","2026-03-06","23:00"],["Race","2026-03-07","22:00"]]},
+  {name:"Chinese GP", sessions:[
+    ["Practice 1","2026-03-12","22:30"],["Sprint Qualifying","2026-03-13","02:30"],["Sprint","2026-03-13","22:00"],
+    ["Qualifying","2026-03-14","02:00"],["Race","2026-03-15","02:00"]]},
+  {name:"Japanese GP", sessions:[
+    ["Practice 1","2026-03-26","21:30"],["Practice 2","2026-03-27","01:00"],["Practice 3","2026-03-27","21:30"],
+    ["Qualifying","2026-03-28","01:00"],["Race","2026-03-29","00:00"]]},
+  {name:"Miami GP", sessions:[
+    ["Practice 1","2026-05-01","12:30"],["Sprint Qualifying","2026-05-01","16:30"],["Sprint","2026-05-02","11:00"],
+    ["Qualifying","2026-05-02","15:00"],["Race","2026-05-03","15:00"]]},
+  {name:"Canadian GP", sessions:[
+    ["Practice 1","2026-05-22","11:30"],["Sprint Qualifying","2026-05-22","15:30"],["Sprint","2026-05-23","11:00"],
+    ["Qualifying","2026-05-23","15:00"],["Race","2026-05-24","15:00"]]},
+  {name:"Monaco GP", sessions:[
+    ["Practice 1","2026-06-05","06:30"],["Practice 2","2026-06-05","10:00"],["Practice 3","2026-06-06","05:30"],
+    ["Qualifying","2026-06-06","09:00"],["Race","2026-06-07","08:00"]]},
+  {name:"Barcelona GP", sessions:[
+    ["Practice 1","2026-06-12","06:30"],["Practice 2","2026-06-12","10:00"],["Practice 3","2026-06-13","05:30"],
+    ["Qualifying","2026-06-13","09:00"],["Race","2026-06-14","08:00"]]},
+  {name:"Austrian GP", sessions:[
+    ["Practice 1","2026-06-26","06:30"],["Practice 2","2026-06-26","10:00"],["Practice 3","2026-06-27","05:30"],
+    ["Qualifying","2026-06-27","09:00"],["Race","2026-06-28","08:00"]]},
+  {name:"British GP", sessions:[
+    ["Practice 1","2026-07-03","06:30"],["Sprint Qualifying","2026-07-03","10:30"],["Sprint","2026-07-04","06:00"],
+    ["Qualifying","2026-07-04","10:00"],["Race","2026-07-05","09:00"]]},
+  {name:"Belgian GP", sessions:[
+    ["Practice 1","2026-07-17","06:30"],["Practice 2","2026-07-17","10:00"],["Practice 3","2026-07-18","05:30"],
+    ["Qualifying","2026-07-18","09:00"],["Race","2026-07-19","08:00"]]},
+  {name:"Hungarian GP", sessions:[
+    ["Practice 1","2026-07-24","06:30"],["Practice 2","2026-07-24","10:00"],["Practice 3","2026-07-25","05:30"],
+    ["Qualifying","2026-07-25","09:00"],["Race","2026-07-26","08:00"]]},
+  {name:"Dutch GP", sessions:[
+    ["Practice 1","2026-08-21","05:30"],["Sprint Qualifying","2026-08-21","09:30"],["Sprint","2026-08-22","05:00"],
+    ["Qualifying","2026-08-22","09:00"],["Race","2026-08-23","08:00"]]},
+  {name:"Italian GP", sessions:[
+    ["Practice 1","2026-09-04","06:30"],["Practice 2","2026-09-04","10:00"],["Practice 3","2026-09-05","05:30"],
+    ["Qualifying","2026-09-05","09:00"],["Race","2026-09-06","08:00"]]},
+  {name:"Spanish GP (Madrid)", sessions:[
+    ["Practice 1","2026-09-11","06:30"],["Practice 2","2026-09-11","10:00"],["Practice 3","2026-09-12","05:30"],
+    ["Qualifying","2026-09-12","09:00"],["Race","2026-09-13","08:00"]]},
+  {name:"Azerbaijan GP", sessions:[
+    ["Practice 1","2026-09-24","03:30"],["Practice 2","2026-09-24","07:00"],["Practice 3","2026-09-25","03:30"],
+    ["Qualifying","2026-09-25","07:00"],["Race","2026-09-26","06:00"]]},
+  {name:"Singapore GP", sessions:[
+    ["Practice 1","2026-10-09","03:30"],["Sprint Qualifying","2026-10-09","07:30"],["Sprint","2026-10-10","04:00"],
+    ["Qualifying","2026-10-10","08:00"],["Race","2026-10-11","07:00"]]},
+  {name:"United States GP (COTA)", sessions:[
+    ["Practice 1","2026-10-23","12:30"],["Practice 2","2026-10-23","16:30"],["Practice 3","2026-10-24","12:30"],
+    ["Qualifying","2026-10-24","16:00"],["Race","2026-10-25","15:00"]]},
+  {name:"Mexico City GP", sessions:[
+    ["Practice 1","2026-10-30","13:30"],["Practice 2","2026-10-30","17:00"],["Practice 3","2026-10-31","12:30"],
+    ["Qualifying","2026-10-31","16:00"],["Race","2026-11-01","14:00"]]},
+  {name:"Brazilian GP", sessions:[
+    ["Practice 1","2026-11-06","09:30"],["Practice 2","2026-11-06","13:00"],["Practice 3","2026-11-07","08:30"],
+    ["Qualifying","2026-11-07","12:00"],["Race","2026-11-08","11:00"]]},
+  {name:"Las Vegas GP", sessions:[
+    ["Practice 1","2026-11-19","20:30"],["Practice 2","2026-11-20","00:00"],["Practice 3","2026-11-20","20:30"],
+    ["Qualifying","2026-11-21","00:00"],["Race","2026-11-21","22:00"]]},
+  {name:"Qatar GP", sessions:[
+    ["Practice 1","2026-11-27","07:30"],["Practice 2","2026-11-27","11:00"],["Practice 3","2026-11-28","08:30"],
+    ["Qualifying","2026-11-28","12:00"],["Race","2026-11-29","10:00"]]},
+  {name:"Abu Dhabi GP", sessions:[
+    ["Practice 1","2026-12-04","03:30"],["Practice 2","2026-12-04","07:00"],["Practice 3","2026-12-05","04:30"],
+    ["Qualifying","2026-12-05","08:00"],["Race","2026-12-06","07:00"]]},
+];
+
+// ---- MotoGP 2026 ----
+// Rounds 1-11 already happened before this tool's "today" (Jul 13, 2026): weekend-only placeholder (no exact time needed).
+const motogpRacesEarly = [
+  ["Thai GP (Buriram)","2026-03-01"],
+  ["Brazilian GP (Goiania)","2026-03-22"],
+  ["Americas GP (COTA, Austin)","2026-03-29"],
+  ["Spanish GP (Jerez)","2026-04-26"],
+  ["French GP (Le Mans)","2026-05-10"],
+  ["Catalan GP","2026-05-17"],
+  ["Italian GP (Mugello)","2026-05-31"],
+  ["Hungarian GP (Balaton Park)","2026-06-07"],
+  ["Czech GP (Brno)","2026-06-21"],
+  ["Dutch TT (Assen)","2026-06-28"],
+  ["German GP (Sachsenring)","2026-07-12"],
+];
+// Rounds 12-22: precise session times, converted to Dallas Central Time
+const motogpRacesLate = [
+  {name:"British GP (Silverstone)", sessions:[
+    ["Free Practice 1","2026-08-07","05:45"],["Practice","2026-08-07","10:00"],["Free Practice 2","2026-08-08","05:10"],
+    ["Qualifying 1","2026-08-08","05:50"],["Qualifying 2","2026-08-08","06:15"],["Sprint","2026-08-08","10:00"],
+    ["Warm Up","2026-08-09","03:40"],["Race","2026-08-09","07:00"]]},
+  {name:"Aragon GP", sessions:[
+    ["Free Practice 1","2026-08-28","03:45"],["Practice","2026-08-28","08:00"],["Free Practice 2","2026-08-29","03:10"],
+    ["Qualifying 1","2026-08-29","03:50"],["Qualifying 2","2026-08-29","04:15"],["Sprint","2026-08-29","08:00"],
+    ["Warm Up","2026-08-30","02:40"],["Race","2026-08-30","07:00"]]},
+  {name:"San Marino GP (Misano)", sessions:[
+    ["Free Practice 1","2026-09-11","03:45"],["Practice","2026-09-11","08:00"],["Free Practice 2","2026-09-12","03:10"],
+    ["Qualifying 1","2026-09-12","03:50"],["Qualifying 2","2026-09-12","04:15"],["Sprint","2026-09-12","08:00"],
+    ["Warm Up","2026-09-13","02:40"],["Race","2026-09-13","07:00"]]},
+  {name:"Austrian GP (Red Bull Ring)", sessions:[
+    ["Free Practice 1","2026-09-18","03:45"],["Practice","2026-09-18","08:00"],["Free Practice 2","2026-09-19","03:10"],
+    ["Qualifying 1","2026-09-19","03:50"],["Qualifying 2","2026-09-19","04:15"],["Sprint","2026-09-19","08:00"],
+    ["Warm Up","2026-09-20","02:40"],["Race","2026-09-20","07:00"]]},
+  {name:"Japanese GP (Motegi)", sessions:[
+    ["Free Practice 1","2026-10-01","20:45"],["Practice","2026-10-02","01:00"],["Free Practice 2","2026-10-02","20:10"],
+    ["Qualifying 1","2026-10-02","20:50"],["Qualifying 2","2026-10-02","21:15"],["Sprint","2026-10-03","01:00"],
+    ["Warm Up","2026-10-03","19:40"],["Race","2026-10-04","00:00"]]},
+  {name:"Indonesian GP (Mandalika)", sessions:[
+    ["Free Practice 1","2026-10-08","21:45"],["Practice","2026-10-09","02:00"],["Free Practice 2","2026-10-09","21:10"],
+    ["Qualifying 1","2026-10-09","21:50"],["Qualifying 2","2026-10-09","22:15"],["Sprint","2026-10-10","02:00"],
+    ["Warm Up","2026-10-10","21:40"],["Race","2026-10-11","01:00"]]},
+  {name:"Australian GP (Phillip Island)", sessions:[
+    ["Free Practice 1","2026-10-22","18:45"],["Practice","2026-10-22","23:00"],["Free Practice 2","2026-10-23","18:10"],
+    ["Qualifying 1","2026-10-23","18:50"],["Qualifying 2","2026-10-23","19:15"],["Sprint","2026-10-23","23:00"],
+    ["Warm Up","2026-10-24","17:40"],["Race","2026-10-24","22:00"]]},
+  {name:"Malaysian GP (Sepang)", sessions:[
+    ["Free Practice 1","2026-10-29","21:45"],["Practice","2026-10-30","02:00"],["Free Practice 2","2026-10-30","21:10"],
+    ["Qualifying 1","2026-10-30","21:50"],["Qualifying 2","2026-10-30","22:15"],["Sprint","2026-10-31","02:00"],
+    ["Warm Up","2026-10-31","21:40"],["Race","2026-11-01","01:00"]]},
+  {name:"Qatar GP (Lusail)", sessions:[
+    ["Free Practice 1","2026-11-06","06:45"],["Practice","2026-11-06","11:00"],["Free Practice 2","2026-11-07","06:00"],
+    ["Qualifying 1","2026-11-07","06:40"],["Qualifying 2","2026-11-07","07:05"],["Sprint","2026-11-07","11:00"],
+    ["Warm Up","2026-11-08","06:40"],["Race","2026-11-08","11:00"]]},
+  {name:"Portuguese GP (Portimao)", sessions:[
+    ["Free Practice 1","2026-11-20","04:45"],["Practice","2026-11-20","09:00"],["Free Practice 2","2026-11-21","04:10"],
+    ["Qualifying 1","2026-11-21","04:50"],["Qualifying 2","2026-11-21","05:15"],["Sprint","2026-11-21","09:00"],
+    ["Warm Up","2026-11-22","03:40"],["Race","2026-11-22","07:00"]]},
+  {name:"Valencia GP", sessions:[
+    ["Free Practice 1","2026-11-27","03:45"],["Practice","2026-11-27","08:00"],["Free Practice 2","2026-11-28","03:10"],
+    ["Qualifying 1","2026-11-28","03:50"],["Qualifying 2","2026-11-28","04:15"],["Sprint","2026-11-28","08:00"],
+    ["Warm Up","2026-11-29","02:40"],["Race","2026-11-29","07:00"]]},
+];
+
+// ---- IndyCar 2026 (Central Time = ET-1h, already converted) ----
+const indycarRaces = [
+  ["Firestone GP of St. Petersburg","2026-03-01","11:29"],
+  ["Good Ranchers 250 (Phoenix)","2026-03-07","14:20"],
+  ["Java House GP of Arlington","2026-03-15","10:00"],
+  ["Alabama Indy GP (Barber)","2026-03-29","12:17"],
+  ["Acura GP of Long Beach","2026-04-19","16:57"],
+  ["Sonsio GP (Indy Road Course)","2026-05-09","15:57"],
+  ["110th Indianapolis 500","2026-05-24","11:45"],
+  ["Chevrolet Detroit GP","2026-05-31","11:51"],
+  ["Bommarito 500 (Gateway)","2026-06-07","20:25"],
+  ["XPEL GP at Road America","2026-06-21","13:27"],
+  ["Honda Indy 200 (Mid-Ohio)","2026-07-05","11:52"],
+  ["Music City GP (Nashville Spdwy)","2026-07-19","16:40"],
+  ["GP of Portland","2026-08-09","15:22"],
+  ["Indy at Markham (Canada)","2026-08-16","11:22"],
+  ["Freedom 250 (Washington D.C.)","2026-08-23","13:00"],
+  ["Milwaukee Mile 250 (Sat)","2026-08-29","13:50"],
+  ["Milwaukee Mile 250 (Sun)","2026-08-30","12:20"],
+  ["GP of Monterey (Laguna Seca)","2026-09-06","13:52"],
+];
+
+// ---- Premier League 2026-27, all 380 fixtures: [matchweek, date, homeIdx, awayIdx] ----
+const T = ["Arsenal","Aston Villa","Brentford","Brighton","Chelsea","Coventry City","Crystal Palace","Everton","Fulham","Hull City","Ipswich Town","Leeds United","Liverpool","Man City","Man United","Newcastle","Nottm Forest","Sunderland","Spurs","Bournemouth"];
+const plFixtures = [
+[1,'2026-08-21',0,5],[1,'2026-08-22',9,14],[1,'2026-08-22',7,6],[1,'2026-08-22',10,17],[1,'2026-08-22',16,11],[1,'2026-08-22',2,18],[1,'2026-08-23',3,1],[1,'2026-08-23',13,19],[1,'2026-08-23',15,12],[1,'2026-08-24',8,4],
+[2,'2026-08-28',6,13],[2,'2026-08-29',12,16],[2,'2026-08-29',19,7],[2,'2026-08-29',5,9],[2,'2026-08-29',18,15],[2,'2026-08-30',4,3],[2,'2026-08-30',11,2],[2,'2026-08-30',17,8],[2,'2026-08-30',14,10],[2,'2026-08-31',1,0],
+[3,'2026-09-04',10,12],[3,'2026-09-05',15,19],[3,'2026-09-05',2,17],[3,'2026-09-05',3,11],[3,'2026-09-05',8,6],[3,'2026-09-05',13,5],[3,'2026-09-05',16,18],[3,'2026-09-05',9,1],[3,'2026-09-06',7,14],[3,'2026-09-06',0,4],
+[4,'2026-09-12',19,2],[4,'2026-09-12',1,16],[4,'2026-09-12',4,9],[4,'2026-09-12',6,10],[4,'2026-09-12',12,8],[4,'2026-09-12',18,7],[4,'2026-09-12',17,0],[4,'2026-09-13',5,3],[4,'2026-09-13',14,13],[4,'2026-09-14',11,15],
+[5,'2026-09-18',2,4],[5,'2026-09-19',18,1],[5,'2026-09-19',3,0],[5,'2026-09-19',7,10],[5,'2026-09-19',11,6],[5,'2026-09-19',13,17],[5,'2026-09-19',15,9],[5,'2026-09-19',16,5],[5,'2026-09-20',19,12],[5,'2026-09-20',8,14],
+[6,'2026-10-10',0,11],[6,'2026-10-10',1,2],[6,'2026-10-10',4,19],[6,'2026-10-10',5,15],[6,'2026-10-10',6,16],[6,'2026-10-10',9,7],[6,'2026-10-10',10,8],[6,'2026-10-10',12,13],[6,'2026-10-10',14,18],[6,'2026-10-10',17,3],
+[7,'2026-10-17',19,17],[7,'2026-10-17',2,12],[7,'2026-10-17',3,6],[7,'2026-10-17',7,4],[7,'2026-10-17',8,9],[7,'2026-10-17',11,14],[7,'2026-10-17',13,10],[7,'2026-10-17',15,1],[7,'2026-10-17',16,0],[7,'2026-10-17',18,5],
+[8,'2026-10-24',0,7],[8,'2026-10-24',1,13],[8,'2026-10-24',4,18],[8,'2026-10-24',5,8],[8,'2026-10-24',6,15],[8,'2026-10-24',9,2],[8,'2026-10-24',10,16],[8,'2026-10-24',12,3],[8,'2026-10-24',14,19],[8,'2026-10-24',17,11],
+[9,'2026-10-31',19,11],[9,'2026-10-31',1,8],[9,'2026-10-31',2,16],[9,'2026-10-31',4,14],[9,'2026-10-31',5,17],[9,'2026-10-31',9,10],[9,'2026-10-31',12,0],[9,'2026-10-31',13,3],[9,'2026-10-31',15,7],[9,'2026-10-31',18,6],
+[10,'2026-11-07',0,9],[10,'2026-11-07',3,2],[10,'2026-11-07',6,12],[10,'2026-11-07',7,5],[10,'2026-11-07',8,15],[10,'2026-11-07',10,19],[10,'2026-11-07',11,18],[10,'2026-11-07',14,1],[10,'2026-11-07',16,13],[10,'2026-11-07',17,4],
+[11,'2026-11-21',19,16],[11,'2026-11-21',1,17],[11,'2026-11-21',2,7],[11,'2026-11-21',4,11],[11,'2026-11-21',5,6],[11,'2026-11-21',9,3],[11,'2026-11-21',12,14],[11,'2026-11-21',13,8],[11,'2026-11-21',15,0],[11,'2026-11-21',18,10],
+[12,'2026-11-28',0,13],[12,'2026-11-28',3,15],[12,'2026-11-28',6,9],[12,'2026-11-28',7,12],[12,'2026-11-28',8,19],[12,'2026-11-28',10,1],[12,'2026-11-28',11,5],[12,'2026-11-28',14,2],[12,'2026-11-28',16,4],[12,'2026-11-28',17,18],
+[13,'2026-12-02',19,3],[13,'2026-12-02',1,7],[13,'2026-12-02',2,0],[13,'2026-12-02',4,6],[13,'2026-12-02',5,10],[13,'2026-12-02',9,16],[13,'2026-12-02',12,17],[13,'2026-12-02',13,11],[13,'2026-12-02',15,14],[13,'2026-12-02',18,8],
+[14,'2026-12-05',19,9],[14,'2026-12-05',1,6],[14,'2026-12-05',2,13],[14,'2026-12-05',4,12],[14,'2026-12-05',7,8],[14,'2026-12-05',11,10],[14,'2026-12-05',14,5],[14,'2026-12-05',15,17],[14,'2026-12-05',16,3],[14,'2026-12-05',18,0],
+[15,'2026-12-12',0,19],[15,'2026-12-12',3,7],[15,'2026-12-12',5,1],[15,'2026-12-12',6,14],[15,'2026-12-12',8,2],[15,'2026-12-12',9,18],[15,'2026-12-12',10,15],[15,'2026-12-12',12,11],[15,'2026-12-12',13,4],[15,'2026-12-12',17,16],
+[16,'2026-12-19',19,5],[16,'2026-12-19',0,14],[16,'2026-12-19',2,15],[16,'2026-12-19',3,10],[16,'2026-12-19',4,1],[16,'2026-12-19',11,8],[16,'2026-12-19',12,18],[16,'2026-12-19',13,9],[16,'2026-12-19',16,7],[16,'2026-12-19',17,6],
+[17,'2026-12-26',1,11],[17,'2026-12-26',5,4],[17,'2026-12-26',6,0],[17,'2026-12-26',7,17],[17,'2026-12-26',8,3],[17,'2026-12-26',9,12],[17,'2026-12-26',10,2],[17,'2026-12-26',14,16],[17,'2026-12-26',15,13],[17,'2026-12-26',18,19],
+[18,'2026-12-30',1,12],[18,'2026-12-30',5,2],[18,'2026-12-30',6,19],[18,'2026-12-30',7,13],[18,'2026-12-30',8,0],[18,'2026-12-30',9,11],[18,'2026-12-30',10,4],[18,'2026-12-30',14,17],[18,'2026-12-30',15,16],[18,'2026-12-30',18,3],
+[19,'2027-01-02',19,1],[19,'2027-01-02',0,10],[19,'2027-01-02',2,6],[19,'2027-01-02',3,14],[19,'2027-01-02',4,15],[19,'2027-01-02',11,7],[19,'2027-01-02',12,5],[19,'2027-01-02',13,18],[19,'2027-01-02',16,8],[19,'2027-01-02',17,9],
+[20,'2027-01-06',0,2],[20,'2027-01-06',3,19],[20,'2027-01-06',6,4],[20,'2027-01-06',7,1],[20,'2027-01-06',8,18],[20,'2027-01-06',10,5],[20,'2027-01-06',11,13],[20,'2027-01-06',14,15],[20,'2027-01-06',16,9],[20,'2027-01-06',17,12],
+[21,'2027-01-16',19,10],[21,'2027-01-16',1,14],[21,'2027-01-16',2,3],[21,'2027-01-16',4,17],[21,'2027-01-16',5,7],[21,'2027-01-16',9,0],[21,'2027-01-16',12,6],[21,'2027-01-16',13,16],[21,'2027-01-16',15,8],[21,'2027-01-16',18,11],
+[22,'2027-01-23',0,15],[22,'2027-01-23',3,13],[22,'2027-01-23',6,18],[22,'2027-01-23',7,2],[22,'2027-01-23',8,1],[22,'2027-01-23',10,9],[22,'2027-01-23',11,4],[22,'2027-01-23',14,12],[22,'2027-01-23',16,19],[22,'2027-01-23',17,5],
+[23,'2027-01-30',19,8],[23,'2027-01-30',1,10],[23,'2027-01-30',2,14],[23,'2027-01-30',4,16],[23,'2027-01-30',5,11],[23,'2027-01-30',9,6],[23,'2027-01-30',12,7],[23,'2027-01-30',13,0],[23,'2027-01-30',15,3],[23,'2027-01-30',18,17],
+[24,'2027-02-06',0,12],[24,'2027-02-06',3,9],[24,'2027-02-06',6,5],[24,'2027-02-06',7,15],[24,'2027-02-06',8,13],[24,'2027-02-06',10,18],[24,'2027-02-06',11,19],[24,'2027-02-06',14,4],[24,'2027-02-06',16,2],[24,'2027-02-06',17,1],
+[25,'2027-02-10',1,19],[25,'2027-02-10',5,12],[25,'2027-02-10',6,2],[25,'2027-02-10',7,11],[25,'2027-02-10',8,16],[25,'2027-02-10',9,17],[25,'2027-02-10',10,0],[25,'2027-02-10',14,3],[25,'2027-02-10',15,4],[25,'2027-02-10',18,13],
+[26,'2027-02-20',19,6],[26,'2027-02-20',0,8],[26,'2027-02-20',2,5],[26,'2027-02-20',3,18],[26,'2027-02-20',4,10],[26,'2027-02-20',11,1],[26,'2027-02-20',12,9],[26,'2027-02-20',13,15],[26,'2027-02-20',16,14],[26,'2027-02-20',17,7],
+[27,'2027-02-27',1,4],[27,'2027-02-27',5,19],[27,'2027-02-27',6,17],[27,'2027-02-27',7,16],[27,'2027-02-27',8,11],[27,'2027-02-27',9,13],[27,'2027-02-27',10,3],[27,'2027-02-27',14,0],[27,'2027-02-27',15,2],[27,'2027-02-27',18,12],
+[28,'2027-03-03',19,18],[28,'2027-03-03',0,6],[28,'2027-03-03',2,10],[28,'2027-03-03',3,8],[28,'2027-03-03',4,5],[28,'2027-03-03',11,9],[28,'2027-03-03',12,1],[28,'2027-03-03',13,7],[28,'2027-03-03',16,15],[28,'2027-03-03',17,14],
+[29,'2027-03-13',19,15],[29,'2027-03-13',1,9],[29,'2027-03-13',4,0],[29,'2027-03-13',5,13],[29,'2027-03-13',6,8],[29,'2027-03-13',11,3],[29,'2027-03-13',12,10],[29,'2027-03-13',14,7],[29,'2027-03-13',17,2],[29,'2027-03-13',18,16],
+[30,'2027-03-20',0,17],[30,'2027-03-20',2,19],[30,'2027-03-20',3,5],[30,'2027-03-20',7,18],[30,'2027-03-20',8,12],[30,'2027-03-20',9,4],[30,'2027-03-20',10,6],[30,'2027-03-20',13,14],[30,'2027-03-20',15,11],[30,'2027-03-20',16,1],
+[31,'2027-04-10',19,13],[31,'2027-04-10',1,3],[31,'2027-04-10',4,8],[31,'2027-04-10',5,0],[31,'2027-04-10',6,7],[31,'2027-04-10',11,16],[31,'2027-04-10',12,15],[31,'2027-04-10',14,9],[31,'2027-04-10',17,10],[31,'2027-04-10',18,2],
+[32,'2027-04-17',0,1],[32,'2027-04-17',2,11],[32,'2027-04-17',3,4],[32,'2027-04-17',7,19],[32,'2027-04-17',8,17],[32,'2027-04-17',9,5],[32,'2027-04-17',10,14],[32,'2027-04-17',13,6],[32,'2027-04-17',15,18],[32,'2027-04-17',16,12],
+[33,'2027-04-24',19,0],[33,'2027-04-24',1,5],[33,'2027-04-24',2,8],[33,'2027-04-24',4,13],[33,'2027-04-24',7,3],[33,'2027-04-24',11,12],[33,'2027-04-24',14,6],[33,'2027-04-24',15,10],[33,'2027-04-24',16,17],[33,'2027-04-24',18,9],
+[34,'2027-05-01',0,18],[34,'2027-05-01',3,16],[34,'2027-05-01',5,14],[34,'2027-05-01',6,1],[34,'2027-05-01',8,7],[34,'2027-05-01',9,19],[34,'2027-05-01',10,11],[34,'2027-05-01',12,4],[34,'2027-05-01',13,2],[34,'2027-05-01',17,15],
+[35,'2027-05-08',19,14],[35,'2027-05-08',2,1],[35,'2027-05-08',3,17],[35,'2027-05-08',7,9],[35,'2027-05-08',8,10],[35,'2027-05-08',11,0],[35,'2027-05-08',13,12],[35,'2027-05-08',15,5],[35,'2027-05-08',16,6],[35,'2027-05-08',18,4],
+[36,'2027-05-15',0,16],[36,'2027-05-15',1,15],[36,'2027-05-15',4,7],[36,'2027-05-15',5,18],[36,'2027-05-15',6,3],[36,'2027-05-15',9,8],[36,'2027-05-15',10,13],[36,'2027-05-15',12,2],[36,'2027-05-15',14,11],[36,'2027-05-15',17,19],
+[37,'2027-05-23',19,4],[37,'2027-05-23',2,9],[37,'2027-05-23',3,12],[37,'2027-05-23',7,0],[37,'2027-05-23',8,5],[37,'2027-05-23',11,17],[37,'2027-05-23',13,1],[37,'2027-05-23',15,6],[37,'2027-05-23',16,10],[37,'2027-05-23',18,14],
+[38,'2027-05-30',0,3],[38,'2027-05-30',1,18],[38,'2027-05-30',4,2],[38,'2027-05-30',5,16],[38,'2027-05-30',6,11],[38,'2027-05-30',9,15],[38,'2027-05-30',10,7],[38,'2027-05-30',12,19],[38,'2027-05-30',14,8],[38,'2027-05-30',17,13],
+];
+const MANCITY = 13;
+
+/* ============================================================
+   BUILD UNIFIED EVENT MODEL
+   events: {date:'YYYY-MM-DD', time:null|'HH:MM', sport:'f1'|'motogp'|'indycar'|'pl', title, meta}
+   ============================================================ */
+function addDays(dateStr, n){
+  const d = new Date(dateStr+"T00:00:00");
+  d.setDate(d.getDate()+n);
+  return d.toISOString().slice(0,10);
+}
+
+let allEvents = []; // for "all" tab (F1+MotoGP+IndyCar+ManCity PL)
+let f1Events = [], motogpEvents = [], indycarEvents = [], plEvents = []; // per-sport full events
+
+const ABBR = {
+  "Practice 1":"FP1","Practice 2":"FP2","Practice 3":"FP3","Qualifying":"Q",
+  "Sprint Qualifying":"SQ","Sprint":"SP","Race":"決勝",
+  "Free Practice 1":"FP1","Practice":"PR","Free Practice 2":"FP2",
+  "Qualifying 1":"Q1","Qualifying 2":"Q2","Warm Up":"WU",
+  "Qualifying/Sprint":"Q/S",
+};
+
+f1Races.forEach(race=>{
+  race.sessions.forEach(([label,date,time])=>{
+    f1Events.push({date:date, time:time, sport:'f1', title:race.name+(label==="Race"?" 決勝":" ("+label+")"),
+      meta:label, group:race.name, abbr:ABBR[label]||label, groupable:true});
+  });
+});
+motogpRacesEarly.forEach(([name,race])=>{
+  const fri = addDays(race,-2), sat = addDays(race,-1);
+  motogpEvents.push({date:fri, time:null, sport:'motogp', title:name+" (FP)", meta:"Practice", group:name, abbr:"FP", groupable:true});
+  motogpEvents.push({date:sat, time:null, sport:'motogp', title:name+" (Q/Sprint)", meta:"Qualifying/Sprint", group:name, abbr:"Q/S", groupable:true});
+  motogpEvents.push({date:race, time:null, sport:'motogp', title:name+" 決勝", meta:"Race", group:name, abbr:"決勝", groupable:true});
+});
+motogpRacesLate.forEach(race=>{
+  race.sessions.forEach(([label,date,time])=>{
+    motogpEvents.push({date:date, time:time, sport:'motogp', title:race.name+(label==="Race"?" 決勝":" ("+label+")"),
+      meta:label, group:race.name, abbr:ABBR[label]||label, groupable:true});
+  });
+});
+indycarRaces.forEach(([name,date,time])=>{
+  indycarEvents.push({date:date, time:time, sport:'indycar', title:name, meta:"Race "+time+" (Dallas)", group:name, abbr:null, groupable:false});
+});
+plFixtures.forEach(([mw,date,h,a])=>{
+  const isMC = (h===MANCITY || a===MANCITY);
+  plEvents.push({date:date, time:null, sport:'pl', title:"⚽ "+T[h]+" vs "+T[a], meta:"第"+mw+"節", mw:mw, isMC:isMC, group:T[h]+" vs "+T[a], abbr:null, groupable:false});
+});
+
+allEvents = [
+  ...f1Events.filter(e=>e.meta==="Race"),
+  ...motogpEvents.filter(e=>e.meta==="Race"),
+  ...indycarEvents,
+  ...plEvents.filter(e=>e.isMC)
+];
+// also include practice/quali in "all" view lightly? Keep all tab focused on race-day + IndyCar + ManCity PL to avoid clutter.
+// but let's still show FP/Q as smaller entries in month/week so weekend shape is visible:
+allEvents = allEvents.concat(f1Events.filter(e=>e.meta!=="Race"));
+allEvents = allEvents.concat(motogpEvents.filter(e=>e.meta!=="Race"));
+
+/* ============================================================
+   STATE + RENDER
+   ============================================================ */
+let currentSport = 'all';
+let currentView = 'month';
+let currentDate = new Date(); // anchors current month/week/day
+
+const DOW = ["日","月","火","水","木","金","土"];
+
+function eventsFor(sport){
+  if(sport==='all') return allEvents;
+  if(sport==='f1') return f1Events;
+  if(sport==='motogp') return motogpEvents;
+  if(sport==='indycar') return indycarEvents;
+  if(sport==='pl') return plEvents;
+}
+
+function fmtMonthLabel(d){ return d.getFullYear()+"年 "+(d.getMonth()+1)+"月"; }
+function fmtWeekLabel(start,end){
+  return `${start.getMonth()+1}/${start.getDate()} - ${end.getMonth()+1}/${end.getDate()}`;
+}
+function fmtDayLabel(d){ return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} (${DOW[d.getDay()]})`; }
+function toISO(d){ return d.toISOString().slice(0,10); }
+function isSameDay(a,b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+
+function render(){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.sport===currentSport));
+  document.querySelectorAll('#viewswitch button').forEach(b=>b.classList.toggle('active', b.dataset.view===currentView));
+
+  const main = document.getElementById('main');
+  main.innerHTML = '';
+
+  if(currentSport==='pl'){
+    renderPLFull(main);
+    document.getElementById('periodLabel').textContent = "プレミアリーグ 全日程";
+    document.getElementById('viewswitch').style.display = 'none';
+    document.getElementById('prevBtn').style.display='none';
+    document.getElementById('nextBtn').style.display='none';
+    document.getElementById('todayBtn').style.display='none';
+    return;
+  } else {
+    document.getElementById('viewswitch').style.display = 'flex';
+    document.getElementById('prevBtn').style.display='inline-block';
+    document.getElementById('nextBtn').style.display='inline-block';
+    document.getElementById('todayBtn').style.display='inline-block';
+  }
+
+  const evs = eventsFor(currentSport);
+
+  if(currentView==='month') renderMonth(main, evs);
+  else if(currentView==='week') renderWeek(main, evs);
+  else renderDay(main, evs);
+}
+
+function makeIcon(sport, variant){
+  variant = variant || 'full';
+  const key = (sport==='motogp' && variant==='crop') ? 'motogp_m' : sport;
+  if(LOGOS[key]){
+    const img = document.createElement('img');
+    img.src = LOGOS[key];
+    img.className = 'sport-icon';
+    img.alt = sport;
+    return img;
+  }
+  const span = document.createElement('span');
+  span.textContent = '⚽';
+  span.className = 'sport-emoji';
+  return span;
+}
+
+function goToDay(d){
+  currentDate = new Date(d);
+  currentView = 'day';
+  render();
+}
+
+// Group same-day events belonging to the same race/match into a single chip:
+// e.g. "British GP (FP2,Q1,Q2)". Non-groupable events (IndyCar/PL) pass through 1:1.
+function groupDayEvents(dayEvs){
+  const order = [];
+  const map = {};
+  dayEvs.forEach(e=>{
+    const key = e.sport+'|'+e.group;
+    if(!map[key]){
+      map[key] = {sport:e.sport, group:e.group, groupable:e.groupable, abbrs:[], title:e.title};
+      order.push(key);
+    }
+    if(e.groupable) map[key].abbrs.push(e.abbr);
+  });
+  return order.map(k=>map[k]);
+}
+
+function renderMonth(main, evs){
+  const year = currentDate.getFullYear(), month = currentDate.getMonth();
+  document.getElementById('periodLabel').textContent = fmtMonthLabel(currentDate);
+
+  const first = new Date(year, month, 1);
+  const startOffset = first.getDay();
+  const gridStart = new Date(year, month, 1-startOffset);
+
+  const grid = document.createElement('div');
+  grid.className = 'month-grid';
+  DOW.forEach((d,idx)=>{
+    const el = document.createElement('div');
+    el.className='dow'+(idx===6?' sat':idx===0?' sun':'');
+    el.textContent=d; grid.appendChild(el);
+  });
+
+  const today = new Date();
+  for(let i=0;i<42;i++){
+    const d = new Date(gridStart); d.setDate(gridStart.getDate()+i);
+    const iso = toISO(d);
+    const cell = document.createElement('div');
+    const dow = d.getDay();
+    cell.className = 'cell' + (d.getMonth()!==month? ' out':'') + (isSameDay(d,today)?' today':'');
+    cell.style.cursor = 'pointer';
+    cell.addEventListener('click', ()=>goToDay(d));
+    const num = document.createElement('div');
+    num.className='num'+(dow===6?' sat':dow===0?' sun':'');
+    num.textContent = d.getDate();
+    cell.appendChild(num);
+    const groups = groupDayEvents(evs.filter(e=>e.date===iso));
+    const shown = groups.slice(0,3);
+    shown.forEach(g=>{
+      const ev = document.createElement('div');
+      ev.className = 'ev '+g.sport;
+      const icon = makeIcon(g.sport, 'crop');
+      ev.appendChild(icon);
+      const label = g.groupable ? (g.group+" ("+g.abbrs.join(',')+")") : g.title;
+      const txt = document.createElement('span'); txt.textContent = ' '+label;
+      ev.appendChild(txt);
+      cell.appendChild(ev);
+    });
+    if(groups.length>3){
+      const more = document.createElement('div'); more.className='more'; more.textContent = `+${groups.length-3}件`;
+      cell.appendChild(more);
+    }
+    grid.appendChild(cell);
+  }
+  main.appendChild(grid);
+}
+
+function renderWeek(main, evs){
+  const d0 = new Date(currentDate);
+  const start = new Date(d0); start.setDate(d0.getDate()-d0.getDay());
+  const end = new Date(start); end.setDate(start.getDate()+6);
+  document.getElementById('periodLabel').textContent = fmtWeekLabel(start,end);
+
+  const grid = document.createElement('div');
+  grid.className = 'week-grid';
+  const today = new Date();
+  for(let i=0;i<7;i++){
+    const d = new Date(start); d.setDate(start.getDate()+i);
+    const iso = toISO(d);
+    const col = document.createElement('div');
+    const dow = d.getDay();
+    col.className = 'week-day' + (isSameDay(d,today)?' today':'') + (dow===6?' sat':dow===0?' sun':'');
+    col.style.cursor = 'pointer';
+    col.addEventListener('click', (evt)=>{ goToDay(d); });
+    const head = document.createElement('div'); head.className='dhead';
+    head.textContent = `${d.getMonth()+1}/${d.getDate()} (${DOW[d.getDay()]})`;
+    col.appendChild(head);
+    evs.filter(e=>e.date===iso).forEach(e=>{
+      const ev = document.createElement('div');
+      ev.className = 'ev '+e.sport;
+      ev.style.display='flex';
+      ev.style.alignItems='center';
+      ev.style.gap='4px';
+      ev.style.whiteSpace='normal';
+      ev.style.marginBottom='3px';
+      const icon = makeIcon(e.sport, 'crop');
+      ev.appendChild(icon);
+      const txt = document.createElement('span'); txt.textContent = (e.time? e.time+" ":"")+e.title;
+      ev.appendChild(txt);
+      col.appendChild(ev);
+    });
+    grid.appendChild(col);
+  }
+  main.appendChild(grid);
+}
+
+function renderDay(main, evs){
+  document.getElementById('periodLabel').textContent = fmtDayLabel(currentDate);
+  const iso = toISO(currentDate);
+  const list = document.createElement('div');
+  list.className = 'day-list itinerary';
+  let dayEvs = evs.filter(e=>e.date===iso).slice();
+  // sort by time; events without a time (all-day placeholders) float to the top
+  dayEvs.sort((a,b)=>{
+    if(!a.time && !b.time) return 0;
+    if(!a.time) return -1;
+    if(!b.time) return 1;
+    return a.time.localeCompare(b.time);
+  });
+  if(dayEvs.length===0){
+    const empty = document.createElement('div'); empty.className='empty'; empty.textContent='この日は予定なし';
+    list.appendChild(empty);
+  } else {
+    dayEvs.forEach(e=>{
+      const row = document.createElement('div'); row.className='itin-row';
+      const timeCol = document.createElement('div'); timeCol.className='itin-time';
+      timeCol.textContent = e.time ? e.time : '終日';
+      const dot = document.createElement('div'); dot.className='itin-dot '+e.sport;
+      const body = document.createElement('div'); body.className='itin-body';
+      const icon = makeIcon(e.sport, 'full');
+      icon.classList.add('itin-icon');
+      const textWrap = document.createElement('div');
+      const ttl = document.createElement('div'); ttl.className='itin-ttl'; ttl.textContent = e.title;
+      const meta = document.createElement('div'); meta.className='itin-meta'; meta.textContent = e.meta + (e.time?' ・ Dallas time':'');
+      textWrap.appendChild(ttl); textWrap.appendChild(meta);
+      body.appendChild(icon); body.appendChild(textWrap);
+      row.appendChild(timeCol); row.appendChild(dot); row.appendChild(body);
+      list.appendChild(row);
+    });
+  }
+  main.appendChild(list);
+}
+
+function renderPLFull(main){
+  const wrap = document.createElement('div');
+  const byMw = {};
+  plFixtures.forEach(([mw,date,h,a])=>{
+    if(!byMw[mw]) byMw[mw]=[];
+    byMw[mw].push([date,h,a]);
+  });
+  Object.keys(byMw).sort((a,b)=>a-b).forEach(mw=>{
+    const block = document.createElement('div'); block.className='mw-block';
+    const title = document.createElement('div'); title.className='mw-title';
+    const dates = byMw[mw].map(r=>r[0]);
+    const first = dates[0];
+    title.textContent = `第${mw}節  (${first.slice(5).replace('-','/')}〜)`;
+    block.appendChild(title);
+    byMw[mw].forEach(([date,h,a])=>{
+      const row = document.createElement('div');
+      const isMC = (h===MANCITY||a===MANCITY);
+      row.className = 'fixture'+(isMC?' mancity':'');
+      const left = document.createElement('div'); left.textContent = "⚽ "+T[h]+" vs "+T[a];
+      const right = document.createElement('div'); right.className='date'; right.textContent = date;
+      row.appendChild(left); row.appendChild(right);
+      block.appendChild(row);
+    });
+    wrap.appendChild(block);
+  });
+  main.appendChild(wrap);
+}
+
+/* ============================================================
+   EVENTS
+   ============================================================ */
+document.getElementById('tabs').addEventListener('click', e=>{
+  const t = e.target.closest('.tab'); if(!t) return;
+  currentSport = t.dataset.sport;
+  render();
+});
+document.getElementById('viewswitch').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  currentView = b.dataset.view;
+  render();
+});
+document.getElementById('prevBtn').addEventListener('click', ()=>{
+  if(currentView==='month') currentDate.setMonth(currentDate.getMonth()-1);
+  else if(currentView==='week') currentDate.setDate(currentDate.getDate()-7);
+  else currentDate.setDate(currentDate.getDate()-1);
+  render();
+});
+document.getElementById('nextBtn').addEventListener('click', ()=>{
+  if(currentView==='month') currentDate.setMonth(currentDate.getMonth()+1);
+  else if(currentView==='week') currentDate.setDate(currentDate.getDate()+7);
+  else currentDate.setDate(currentDate.getDate()+1);
+  render();
+});
+document.getElementById('todayBtn').addEventListener('click', ()=>{
+  currentDate = new Date();
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
