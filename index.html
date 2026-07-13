@@ -89,11 +89,11 @@
   main{padding:0 16px 40px;}
 
   /* Month view */
-  .month-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,.05);}
+  .month-grid{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,.05);}
   .dow{background:#fff; color:var(--sub); text-align:center; font-size:12.5px; padding:7px 0; font-weight:700;}
   .dow.sat{background:var(--indycarbg); color:var(--indycar);}
   .dow.sun{background:var(--f1bg); color:var(--f1);}
-  .cell{background:#fff; min-height:92px; padding:5px 5px; position:relative;}
+  .cell{background:#fff; min-height:92px; padding:5px 5px; position:relative; min-width:0; overflow:hidden;}
   .cell.out{background:#fafaf7; color:#c9c2b3;}
   .cell.out .num{color:#c9c2b3;}
   .cell:hover{background:var(--panel2); transition:background .12s;}
@@ -121,8 +121,8 @@
   .more{font-size:11px; color:var(--sub); margin-top:2px;}
 
   /* Week view */
-  .week-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:8px;}
-  .week-day{background:#fff; border:1px solid var(--line); border-radius:14px; padding:8px; min-height:130px; box-shadow:0 2px 10px rgba(0,0,0,.04); transition:background .12s;}
+  .week-grid{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:8px;}
+  .week-day{background:#fff; border:1px solid var(--line); border-radius:14px; padding:8px; min-height:130px; min-width:0; box-shadow:0 2px 10px rgba(0,0,0,.04); transition:background .12s;}
   .week-day:hover{background:var(--panel2);}
   .week-day.today{border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent);}
   .week-day.sat{background:var(--indycarbg);}
@@ -627,7 +627,8 @@ function renderMonth(main, evs){
       ev.className = 'ev '+g.sport;
       const icon = makeIcon(g.sport, 'crop');
       ev.appendChild(icon);
-      const label = g.groupable ? (g.group+" ("+g.abbrs.join(',')+")") : g.title;
+      const shortName = g.group.replace(/\s*\([^)]*\)\s*$/, '');
+      const label = g.groupable ? (shortName+" ("+g.abbrs.join(',')+")") : g.title;
       const txt = document.createElement('span'); txt.textContent = ' '+label;
       ev.appendChild(txt);
       cell.appendChild(ev);
